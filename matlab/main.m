@@ -23,6 +23,7 @@ systemtexts = {...
 
 %%
 
+% Make routines for benchmarking with or without smoothing
 allres = benchmark_evaluate_systems_on_experiments(systems,data.db);
 
 %% Save in an appropriate place

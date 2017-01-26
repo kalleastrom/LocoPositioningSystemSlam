@@ -6,9 +6,11 @@ end
 
 switch id(1),
     case 1
-%         data.foldername = foldername;
-%         data.fileNameBase = 'bassh1-';
-%         data.dataDir = [tdoasystemsettings.datapath 'sfsdb' filesep foldername filesep];
+        tmp = load([systemsettings.rootpath filesep 'data' filesep 'lpsdb' filesep 'data_db_20170119_20170119.mat']);
+        data.db = tmp.data_db;
+        data.anchorDim = 3; % The dimensionality of the span of the anchor positions
+        data.bitcrazeDim = 3; % The dimensionality of the span of the bitcraze positions
+    case 2
         tmp = load([systemsettings.rootpath filesep 'data' filesep 'lpsdb' filesep 'data_db_20170119_20170119.mat']);
         data.db = tmp.data_db;
         data.anchorDim = 3; % The dimensionality of the span of the anchor positions
