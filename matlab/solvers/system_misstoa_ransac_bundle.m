@@ -1,4 +1,4 @@
-function [r,s,inliers]=system_misstoa_ransac_bundle(d,sys);
+function [r,s,inliers,res,jac]=system_misstoa_ransac_bundle(d,sys);
 %
 %
 dobundle = 1;
@@ -113,9 +113,21 @@ toa_calc_d_from_xy(r0,s0);
 inliers = sol.inlmatrix==1;
 
 % Final bundle among the inliers
-
+%keyboard;
 [r1,s1,res,jac]=toa_3D_bundle(d,r0,s0,inliers);
 [r,s]=toa_normalise(r1,s1);
+
+n = size(s,2);
+mid = 2:(n-1);
+opts.cc =[mid-1;mid;mid+1]';
+
+opts.lambdacc = 10;
+[r,s,res,jac]=toa_3D_bundle_with_smoother(d,r,s,inliers,opts);
+
+jtmp = jac,
+jtmp(:,1:3)=[];
+C = std(res)^2*inv(jtmp'*jtmp);
+
 
 %[m,n]=size(d); % Should really be nr of rec and send that we
 % optimize over

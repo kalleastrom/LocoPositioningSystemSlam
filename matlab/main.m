@@ -1,7 +1,9 @@
 % main.m
 
+addpath ../data/lpsdb
+
 %% read a database of benchmark examples
-[data]=read_from_lpsdb(systemsettings,2); %
+[data]=read_from_lpsdb(systemsettings,3); %
 
 %% Choose one or several systems to test.
 systems = {...
@@ -24,7 +26,13 @@ systemtexts = {...
 %%
 
 % Make routines for benchmarking with or without smoothing
-allres = benchmark_evaluate_systems_on_experiments(systems,data.db);
+%allres = benchmark_evaluate_systems_on_experiments(systems,data.db);
+
+
+%%
+ii = 1;
+[rtmp,stmp,inltmp]=feval(systems{ii},data.d);
+
 
 %% Save in an appropriate place
 
@@ -127,7 +135,7 @@ for ploti = 1:length(data.exp_description);
     ylabel('Probability of estimate close to the ground truth');
     ll = legend(systemtexts(selplots));
     set(ll,'FontSize',18);
-    printFig(['fig_hitrate_vs_' vfname]);
+%    printFig(['fig_hitrate_vs_' vfname]);
 end
 
 

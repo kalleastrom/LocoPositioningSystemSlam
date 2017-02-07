@@ -28,6 +28,9 @@ switch id(1),
         data.anchorDim = 3; % The dimensionality of the span of the anchor positions
         data.bitcrazeDim = 3; % The dimensionality of the span of the bitcraze positions
     otherwise
+        tmp = load([systemsettings.rootpath filesep 'data' filesep 'lpsdb' filesep 'data4.mat']);
+        %keyboard;
+        data = tmp.data;
 %         dirname = ensure_dirname(full_dirname,'sound files');
 %         fileExtension = '.aiff';
 %         sound_files = dir([dirname '*' fileExtension]);
