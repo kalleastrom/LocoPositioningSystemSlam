@@ -180,5 +180,5 @@ TSWLatexianTemp*
 *~[0-9]*
 
 # Python and storage files
-.DS_Store
-.pyc
+*.DS_Store
+*.pyc
