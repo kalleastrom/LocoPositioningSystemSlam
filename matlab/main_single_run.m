@@ -1,13 +1,12 @@
 % Dowbnload data4.mat and put it in
-% 
+%
 
 % main.m
-
+fix_paths
 addpath ../data/lpsdb
 addpath solvers
 addpath tools
 addpath tutorials
-fix_paths
 
 %%
 data_nr = 3;   % Use example data data_nr
@@ -15,7 +14,7 @@ system_nr = 3; % Use system system_nr
 
 
 %% read a database of benchmark examples
-[data]=read_from_lpsdb(systemsettings,3); % Use example data data_nr
+[data]=read_from_lpsdb(systemsettings,data_nr); % Use example data data_nr
 
 %% Choose one or several systems to test.
 systems = {...
@@ -36,10 +35,35 @@ systemtexts = {...
     };
 
 %%
-ii = 3; % Use system 3
-[rtmp,stmp,inltmp,res,jac]=feval(systems{ii},data.d);
+[rtmp,stmp,inltmp,res,jac]=feval(systems{system_nr},data.d);
 
 
 
 %% Visualize results
+
+T = 0.2;
+d = data.d;
+dcalc = toa_calc_d_from_xy(rtmp,stmp);
+resm = dcalc-d;
+inl3 = (abs(resm)<T);
+
+figure(4);
+subplot(4,1,1);
+imagesc(d);
+subplot(4,1,2);
+imagesc(dcalc);
+subplot(4,1,3);
+imagesc(dcalc-d);
+subplot(4,1,4);
+imagesc(inl3);
+
+figure(5);
+clf;
+plot(d');
+hold on;
+plot(dcalc');
+
+figure(6);
+clf;
+hist(resm(:),100);
 
