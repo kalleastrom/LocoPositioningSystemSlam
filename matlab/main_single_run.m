@@ -9,8 +9,13 @@ addpath tools
 addpath tutorials
 fix_paths
 
+%%
+data_nr = 3;   % Use example data data_nr
+system_nr = 3; % Use system system_nr
+
+
 %% read a database of benchmark examples
-[data]=read_from_lpsdb(systemsettings,3); %
+[data]=read_from_lpsdb(systemsettings,3); % Use example data data_nr
 
 %% Choose one or several systems to test.
 systems = {...
@@ -31,7 +36,7 @@ systemtexts = {...
     };
 
 %%
-ii = 3;
+ii = 3; % Use system 3
 [rtmp,stmp,inltmp,res,jac]=feval(systems{ii},data.d);
 
 

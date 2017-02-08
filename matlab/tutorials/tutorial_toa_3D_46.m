@@ -1,4 +1,5 @@
 %% test case 3D - Generate data matrix d
+% New solver
 
 options.int = 0;
 options.normalise=1;
@@ -13,9 +14,11 @@ options.twod = (D==2);
 [d,x,y] = simulate_toa(m,n,options);
 [x,y]=toa_normalise(x,y);
 
-%% Run solver
+%% Run solver, old version
 load toa_3D_46_settings.mat
 [sols,stats] = toa_3D_46(d,settings);
+%% Run solver, old version
+
 
 rmserr = zeros(1,size(sols.x,2));
 for kk = 1:size(sols.x,2),
@@ -29,6 +32,8 @@ end
 %% There are up to 38 solutions. Find the right one
 
 [minrmserr,mini]=min(rmserr);
+
+%% Plot the best of the 38 solutions vs the ground truth one
 
 xn = sols.x{mini};
 yn = sols.y{mini};
