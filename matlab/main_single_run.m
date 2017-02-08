@@ -1,6 +1,13 @@
+% Dowbnload data4.mat and put it in
+% 
+
 % main.m
 
 addpath ../data/lpsdb
+addpath solvers
+addpath tools
+addpath tutorials
+fix_paths
 
 %% read a database of benchmark examples
 [data]=read_from_lpsdb(systemsettings,3); %
