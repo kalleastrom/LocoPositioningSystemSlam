@@ -1,5 +1,6 @@
-%% test case 3D - Generate data matrix d
-% New solver
+%% Tutorial for the TOA 6,4 problem
+% Generate data matrix d
+% New solver, 2017-02-09
 
 options.int = 0;
 options.normalise=1;
@@ -12,12 +13,14 @@ D = 3; % Dimensionality
 options.twod = (D==2);
 
 [d,x,y] = simulate_toa(m,n,options);
-[x,y]=toa_normalise(x,y);
+[xgt,ygt]=toa_normalise(x,y);
 
 %% Run solver, old version
-load toa_3D_46_settings.mat
-[sols,stats] = toa_3D_46(d,settings);
+%load ../solvers/toa_3D_46_settings.mat
+%[sols,stats] = toa_3D_46(d,settings);
 %% Run solver, old version
+[sols] = toa_3D_46_red(d);
+%sols = solver_toa_46_red(data0);
 
 
 rmserr = zeros(1,size(sols.x,2));
@@ -40,10 +43,14 @@ yn = sols.y{mini};
 [xn,yn]=toa_3D_bundle(d,xn,yn);
 [xn,yn]=toa_normalise(xn,yn);
 
-figure(1);
-subplot(1,2,1);
-display_solution(d,x,y);
-title('Ground Truth Solution');
-subplot(1,2,1);
-display_solution(d,xn,yn);
-title('Solution from minimal 4,6 solver');
+rmserr = sqrt(sum(sum(([x y]-[xn yn]).^2 )))/30;
+
+%%
+figure(1); clf;
+rita3(x,'g+');
+hold on
+rita3(y,'r+');
+rita3(xn,'go');
+rita3(yn,'ro');
+legend({'Ground Truth Receivers','Ground Truth Senders','Estimated Receivers','Estimated Senders'});
+title(['RMS error: ' num2str(rmserr)]);

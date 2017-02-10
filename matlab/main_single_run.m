@@ -38,10 +38,27 @@ systemtexts = {...
 [rtmp,stmp,inltmp,res,jac]=feval(systems{system_nr},data.d);
 
 
+%% Try some extra bundling
+
+T = 0.3;
+
+rin = rtmp;
+sin = stmp;
+d = data.d;
+dcalc = toa_calc_d_from_xy(rin,sin);
+resm = dcalc-d;
+inlin = (abs(resm)<T);
+
+mid = 2:(size(d,2)-1);
+sys.cc = [mid-1;mid;mid+1]';
+sys.lambdacc = 10;
+[rut,sut,res,jac]=toa_3D_bundle_with_smoother(d,rin,sin,inlin,sys);
+rtmp = rut;
+stmp = sut;
+
 
 %% Visualize results
 
-T = 0.2;
 d = data.d;
 dcalc = toa_calc_d_from_xy(rtmp,stmp);
 resm = dcalc-d;
@@ -49,9 +66,9 @@ inl3 = (abs(resm)<T);
 
 figure(4);
 subplot(4,1,1);
-imagesc(d);
+imagesc(min(d,3));
 subplot(4,1,2);
-imagesc(dcalc);
+imagesc(min(dcalc,3));
 subplot(4,1,3);
 imagesc(dcalc-d);
 subplot(4,1,4);
@@ -63,7 +80,22 @@ plot(d');
 hold on;
 plot(dcalc');
 
+dtmp = d;
+dtmp(find(~inl3))=NaN*ones(1,sum(sum(~inl3)));
 figure(6);
 clf;
+plot(dtmp');
+hold on;
+plot(dcalc');
+
+
+figure(7);
+clf;
 hist(resm(:),100);
+
+figure(8);
+plot(dcalc(:),resm(:),'.')
+
+
+dcalcgt = toa_calc_d_from_xy(data.Gtr,data.GTs);
 
