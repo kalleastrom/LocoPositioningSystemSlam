@@ -1,5 +1,5 @@
 """
-Example when running the anchor localization module on known data 
+Examples for running the anchor localization module on known data 
 """
 import os,sys,inspect
 
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     print 10*'-'
     
     # Call solver
-    solver()
+    #solver()
     
     # Print statistics
     print solver.verbose()

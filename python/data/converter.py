@@ -5,7 +5,7 @@ import scipy.io as sio
 import os
 import json
 
-def convertDataSet(lfile):
+def convert_data_set(lfile):
     """
     Converts a .mat file to the appropriate JSON format
     """
