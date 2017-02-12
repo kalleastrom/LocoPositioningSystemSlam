@@ -1,62 +1,80 @@
 """
 A module for automatic anchor localization in an UWB system
 """
-import numpy as np
-from numpy.linalg import cholesky, inv, eig, solve, det, svd
-from numpy.matlib import repmat
+
 import os, json
+import scipy.io as sio
+
+# Numerics
+import numpy as np
+from numpy.linalg import svd, cholesky, inv, eig, solve
+from numpy.matlib import repmat
+
+# Custom modules
+import lps_utilities as util
+
+# Plotting imports
 import matplotlib.pylab as plt
 from mpl_toolkits.mplot3d import Axes3D # Only used for 3D plotting
 
-class AnchorLocalizer(object):
+class Setting(object):
+    pass
+
+class Settings(object):
     """
-    The anchor localizer object takes a data file or direct measurements in an
+    The settings object sets all constants in the solver outside of the
+    """
+    def __init__(self):
+        # Settings for the bundle methods
+        self.bundle = Setting()
+        self.bundle.numberOfIterations = 30
+        self.bundle.counterLimit = 50
+        self.bundle.numericalLimit = 1e-4
+        
+        self.smoother = Setting()
+        
+    
+class Solver(object):
+    """
+    The solver object takes a data file or direct measurements in an
     UWB positioning system and computes the position of the anchors based
     on ranging measurements between the UAV and the UWB anchors.
-    
+
     The object can be set to include a UAV model to improve the anchor position
     estimate with the known system dynamics. However, the data used to
     propagate the dynamics in time must then be time stamped and logged at the
     same instance in time as the ranging measurement.
-    
     """
-    def __init__(self, dataDirectory):
-        """
-        Constructor of the anchor localizer object
-        """
-        self.dataDirectory           = dataDirectory
-        self.numberOfAnchors         = None
-        self.numberOfMeasurements    = None
-        self.information             = None
-        self.ranges                  = None
-        self.initialPositions        = None
-        self.finalPositions          = None
-        self.finalPositionDeviations = None
-
-        # Intermediary attributes for debugging 
-        self.D = 3  # The number of dimensions
+    def __init__(self, *args, **kwargs):
+        self.dataDirectory = None
+        if 'directory' in kwargs:
+            self.dataDirectory = kwargs['directory']
+        self.solution = Solution() # Creates and empty solution object
+        self.settings = Settings() # Creats the default settings
 
     def __str__(self):
-        """
-        String representation of the anchor localizer object
-        
-        :returns: representation
-        :rtype: string
-        """
-        return "Anchor localizer object"
+        return "Anchor localizer solver object"
 
     def __call__(self):
         """
         Calls the solver and finds the anchor positions
         """
-        # Parameters
-        self.numIterInit = 2 # Number of iterations to find an initial solution
+        # Instances the current data in the solver to use pure functions
+        initial_solution = self.solution
         
-        # Finds an initial feasible solution from the ranging data
-        self.find_feasible_solution()
+        # Assert that the initial solution contains the correct data to proceed
+        if (not self.assert_completeness(initial_solution) or
+            not self.assert_consistency(initial_solution)):
+            # The problem is not sufficiently well posed to solve
+            return False
+        else:
+            # Finds an initial feasible solution from the ranging data
+            feasible_solution = self.find_feasible_solution(initial_solution)
+    
+            # Optimization to estimate the anchor positions
+            self.solution = self.find_optimal_solution(feasible_solution)
+            return True
 
-        # Optimization to estimate the anchor positions
-        r, s, res, jacobian = self.find_optimal_solution()
 
     def load(self, filename):
         """
@@ -88,17 +106,117 @@ class AnchorLocalizer(object):
         :param filename: Name of the file to load
         :type filename: string
         """
+        # Currently only the loading of .mat files are supported
         path = os.path.join(self.dataDirectory, filename)
         try:
-            with open(path) as trajectoryFile:
-                data = json.load(trajectoryFile)
+            mat = sio.loadmat(path)
+            ranges = np.array(mat['data'][0][0][0])
+            self.solution.ranges = ranges
+            self.solution.numberOfAnchors = ranges.shape[0]
+            self.solution.numberOfMeasurements = ranges.shape[1]
         except:
             raise Exception(('Could not load the data file "%s" from the'+
                              'directory %s' % (filename)))
-        self.ranges = np.array(data['ranges'])
-        self.numberOfAnchors = self.ranges.shape[0]
-        self.numberOfMeasurements = self.ranges.shape[1]
-        self.information = np.array(data['info'])
+
+    def message(self, string):
+        """
+        A method that is called when communicating with the user
+        
+        :returns: message
+        :rtype: string
+        """
+        print string
+
+    def assert_completeness(self, solution):
+        # TODO: Define things to assert
+        return True
+
+    def assert_consistency(self, solution):
+        # TODO: Define things to assert
+        return True
+
+    def find_feasible_solution(self, solution):
+        """
+        Find an initial feasible solution to the problem using RANSAC bundling
+        """
+        numIter = solution.numberOfRansacIterations
+        
+        solution = util.ransac_5_rows(solution);
+        solution = util.bundle_rank(solution);
+        
+        for iteration in range(numIter):
+            solution = util.ransac_more_rows(solution)
+            solution = util.bundle_rank(solution)
+            solution = util.ransac_more_cols(solution)
+            solution = util.bundle_rank(solution)
+
+    def find_optimal_solution(self, solution):
+        """
+        Find an initial feasible solution to the problem using L2 optimization
+        """
+        Bhat = solution.Bhat
+        dim = solution.D
+        rows = solution.rows
+        columns = solution.columns
+        
+        xt, yt = util.pre_process_compaction_matrix(Bhat, dim)
+        H, b = util.get_linear_constraints(xt, yt)        
+        H, L = util.safe_cholesky_factorization(H)
+
+        # Finds and reshapes the initial r and s vectors
+        r00 = solve(np.transpose(L), xt)
+        s00 = np.dot(L, (yt + repmat(b, 1, self.Bhat.shape[1])));
+        r0 = np.zeros(r00.shape)
+        s0 = np.zeros(s00.shape)
+        r0 = r00[:, rows]
+        s0 = s00[:, columns]
+        
+        # Finds the bundled solution and normalizes
+        r1, s1, res, jac = util.toa_3D_bundle(r0, s0, solution)
+        r2, s2 = util.normalize(r1, s1)
+        
+        # Finds the smoothened solution
+        r, s, res, jac = util.toa_3D_bundle_with_smoother(r2, s2, solution)
+
+        # Finalizes solution
+        solution.R = r
+        solution.S = s
+        solution.residual = res
+        solution.jacobian = jac
+        return solution
+
+class Solution(object):
+    """
+    A solution data object describing the state of the solution and the
+    settings used to generate it
+    """
+
+    def __init__(self):
+        """
+        Constructor of the anchor localizer object
+        """
+        self.ranges                  = None
+        self.numberOfAnchors         = None
+        self.numberOfRanges          = None
+        self.information             = None
+        self.initialPositions        = None
+        self.finalPositions          = None
+        self.finalPositionDeviations = None
+
+        # Settings 
+        self.dim = 3  # The number of dimensions
+
+    def __str__(self):
+        return "Anchor localizer solution object"
+
+    def message(self, string):
+        """
+        A method that is called when communicating with the user
+        
+        :returns: message
+        :rtype: string
+        """
+        print string
 
     def verbose(self):
         """
@@ -147,13 +265,12 @@ class AnchorLocalizer(object):
                 plt.xlabel('Masurements')
                 plt.ylabel('Anchor')
                 plt.colorbar()
-                plt.show()
-        plt.cla()
+                
         if 'anchors' in options:
             if self.initialPositions is None or self.finalPositionDeviations is None:
                 self.message('No initial anchor position has been computed')
             else:
-                fig = plt.figure(5)
+                fig = plt.figure(2)
                 ax = fig.gca(projection='3d')
                 ax.plot(self.initialPositions[0,:],
                         self.initialPositions[1,:],
@@ -174,16 +291,7 @@ class AnchorLocalizer(object):
                                     linewidth=0,
                                     antialiased=False,
                                     alpha=0.1)
-                plt.show()
-    
-    def message(self, string):
-        """
-        A method that is called when communicating with the user
-        
-        :returns: message
-        :rtype: string
-        """
-        print string
+        plt.show()
     
     def _get_ellipsoid(self, center, radius):
         """
@@ -199,151 +307,6 @@ class AnchorLocalizer(object):
         y = center[1] + radius[1] * np.outer(np.sin(u), np.sin(v))
         z = center[2] + radius[2] * np.outer(np.ones_like(u), np.cos(v))
         return x, y, z
-    
-    ###########################################################################
-    # Functions used to localize the anchors, refer to the publication below
-    # and use the bib-tex entry for citation
-    #
-    # @inbook{
-    #     6505724206a7482c8bec0010f5a11197,
-    #     title = "Robust Time-of-Arrival Self Calibration with Missing Data and Outliers",
-    #     author = "Batstone, {Kenneth John} and Magnus Oskarsson and Karl \AA str\o" m",
-    #     year = "2016",
-    #     month = "9",
-    #     doi = "10.1109/EUSIPCO.2016.7760673",
-    #     pages = "2370--2374",
-    #     booktitle = "2016 24th European Signal Processing Conference (EUSIPCO)",
-    #     publisher = "Institute of Electrical and Electronics Engineers Inc.",
-    #     address = "United States"
-    # }
-    ###########################################################################
-    
-    def find_feasible_solution(self):
-        """
-        Find an initial feasible solution to the problem using RANSAC bundling
-        """
-        self.ransac_5_rows();
-        self.bundle_rank();
-        for kk in range(self.numIterInit):
-            self.ransac_more_rows()
-            self.bundle_rank()
-            self.ransac_more_cols()
-            self.bundle_rank()
-
-    def find_optimal_solution(self):
-        """
-        Find an initial feasible solution to the problem using L2 optimization
-        """
-        # Go from the found Bhat to {H,b} to {r,s}
-        u, s, v = svd(self.Bhat[1:,1:])
-        s = np.diag(s)
-        xr  = np.transpose(u[:,0:self.D])
-        yr  = np.dot(s[0:self.D,0:self.D], np.transpose(v[:,0:self.D]))
-        xtp = np.concatenate((np.zeros((self.D,1)), xr),1)
-        yt  = np.concatenate((np.zeros((self.D,1)), yr),1)
-        xt  = xtp/-2.0;
-        
-        # Get the linear constraints
-        H, b = self.get_linear_constraints(xt, yt)
-        
-        # Guarantee positive definiteness of H in order to cholesky factorize
-        realEig = np.real(eig(H)[0]) # The real part of the eigenvalues of H
-        if min(realEig) > 0:
-            L = cholesky(inv(H))
-        else:
-            H = H + (-min(realEig) + 0.1) * np.eye(3)
-            L = cholesky(inv(H))
-
-        # Finds the R and S vectors
-        r00 = solve(np.transpose(L), xt)
-        s00 = np.dot(L, (yt + repmat(b, 1, self.Bhat.shape[1])));
-        
-        # Reshapes the initial r00 and s00 vectors TODO: Why is this done?
-        # TODO: write out equations
-        r0 = r00
-        s0 = s00
-        
-        # Finds the bundled solution and normalizes
-        r1, s1, res1, jacobian1 = self.bundle(r0, s0)
-        r2, s2 = self.normalize(r1, s1)
-        
-        # Finds the smoothened solution
-        r, s, res, jacobian = self.bundle_with_smoother(r2, s2)
-
-        # computes the covariance matrix and checks that it exists
-        #J = jacobian[:,0:2]
-        #JT = np.transpose(jacobian[:,0:2])
-        #JTJ = np.dot(JT, J)
-        #if abs(det(JTJ)) < 1.0e-6:
-        #    self.issue_warning("The covariance matrix is singular to working precision")
-        # TODO Compute covariance matrix C
-            
-        if self.debug:
-            # Outputs all temporary variables when debugging or testing
-            return (H, b, xr, yr, xtp, yt, xt,
-                    r00, s00, r1, s1, res1, jacobian1,
-                    r2, s2, r, s, res, jacobian)
-        return r, s, res, jacobian
-        
-    def get_linear_constraints(self, xt, yt):
-        """
-        Sets up the linear constraints (not using the multipol package)
-        """
-        Bhatcol1 = self.Bhat[:,0]
-        #todo write out equations
-        H = np.zeros((3,3))
-        b = np.zeros((3,1))
-        return H, b
-
-        
-    def ransac_5_rows(self):
-        """
-        
-        """
-        print 'Not yet implemented'
-
-    def ransac_more_rows(self):
-        """
-        
-        """
-        print 'Not yet implemented'
-
-    def ransac_more_cols(self):
-        """
-        
-        """
-        print 'Not yet implemented'
-
-    def bundle_rank(self):
-        """
-        
-        """
-        print 'Not yet implemented'
-
-
-    def bundle(self, r, s):
-        """
-        
-        """
-        print 'Not yet implemented'
-        r, s, res, jacobian = 0,0,0,0
-        return r, s, res, jacobian
-
-    def normalize(self, r, s):
-        """
-        
-        """
-        print 'Not yet implemented'
-        r, s  = 0,0
-        return r, s
-
-    def bundle_with_smoother(self, r, s):
-        """
-        
-        """
-        print 'Not yet implemented'
-        r, s, res, jacobian = 0,0,0,0
-        return r, s, res, jacobian
 
 class DiscreteDynamics(object):
     

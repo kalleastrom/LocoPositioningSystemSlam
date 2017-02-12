@@ -10,7 +10,7 @@ rootdir = os.path.dirname(curdir)
 modulesdDir = os.path.join(rootdir, 'modules')
 sys.path.insert(0,modulesdDir)
 
-from locolib import TrippleIntegrator
+from lps_classes import TrippleIntegrator
 
 import numpy as np
 

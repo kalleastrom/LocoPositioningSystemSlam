@@ -9,39 +9,36 @@ modulesdDir = os.path.join(rootdir, 'modules')
 dataDir = os.path.join(rootdir, 'data')
 sys.path.insert(0,modulesdDir)
 
-from locolib import AnchorLocalizer
+from lps_classes import Solver
 import numpy as np
 
 if __name__ == "__main__":
     
     # Required inputs
     numberOfAnchors = 6
-    filename = 'data4.json'
-    print 10*'-'
+    filename = 'data4.mat'
     
     # Initialize solver
-    solver = AnchorLocalizer(dataDir)
+    b = 1
+    solver = Solver(directory = dataDir)
     
     # Prints the current state of the solver without loaded data
-    print solver.verbose()
-    print 10*'-'
+    print solver.solution.verbose()
     
     # Load data - checking that it is syntactically correct
     solver.load(filename)
 
     # Prints the current state of the solver with loaded data and no solution
-    print solver.verbose()
-    print 10*'-'
+    print solver.solution.verbose()
     
     # Call solver
     #solver()
     
     # Print statistics
-    print solver.verbose()
-    print 2*'-'
+    print solver.solution.verbose()
 
-    
-    solver.initialPositions = np.random.rand(3,6)
-    solver.finalPositions = np.random.rand(3,6)
-    solver.finalPositionDeviations = 0.2*np.random.rand(3,6)
-    solver.plot(['ranges','anchors'])
+    # These fields will be set in the call() function once unit tests pass
+    solver.solution.initialPositions = np.random.rand(3,6)
+    solver.solution.finalPositions = np.random.rand(3,6)
+    solver.solution.finalPositionDeviations = 0.2*np.random.rand(3,6)
+    solver.solution.plot(['anchors'])
