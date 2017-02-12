@@ -10,6 +10,7 @@ rootdir = os.path.dirname(curdir)
 modulesdDir = os.path.join(rootdir, 'modules')
 dataDir = os.path.join(rootdir, 'data')
 testDir = os.path.join(rootdir, 'tests')
+testDataDir = os.path.join(testDir, 'test-data')
 sys.path.insert(0,modulesdDir)
 
 import lps_utilities as util
@@ -60,9 +61,22 @@ class TestUtilities(unittest.TestCase):
         self.assertAlmostEqual(xnew.all(), xhat.all())
         self.assertAlmostEqual(ynew.all(), yhat.all())
     
+    def test_toa_normalize(self):
+        # Fixture
+        testData = sio.loadmat(os.path.join(testDataDir,'data_toa_normalize'))
+        rin = testData['rin']
+        sin = testData['sin']
+
+        # Assert
+        rout, sout = util.toa_normalise(rin, sin)
+
+        # Test
+        self.assertAlmostEqual(rout.all(), testData['rout'].all())
+        self.assertAlmostEqual(sout.all(), testData['sout'].all())
+
     def test_calcresandjac(self):
         # Fixture
-        testData = sio.loadmat(os.path.join(testDir,'data_calcresandjac'))
+        testData = sio.loadmat(os.path.join(testDataDir,'data_calcresandjac'))
         D = testData['D']
         I = testData['I'] - 1 # Different indexation in Python and Matlab
         J = testData['J'] - 1 # Different indexation in Python and Matlab
@@ -78,13 +92,13 @@ class TestUtilities(unittest.TestCase):
 
     def test_bundletoa(self):
         # Fixture
-        testData = sio.loadmat(os.path.join(testDir,'data_bundletoa'))
+        testData = sio.loadmat(os.path.join(testDataDir,'data_bundletoa'))
         D = testData['D']
         I = testData['I'] - 1 # Different indexation in Python and Matlab
         J = testData['J'] - 1 # Different indexation in Python and Matlab
         x = testData['x']
         y = testData['y']
-        
+
         settings = Settings()
         settings.bundle.numberOfIterations = 30
         settings.bundle.counterLimit = 50
@@ -99,7 +113,32 @@ class TestUtilities(unittest.TestCase):
         self.assertAlmostEqual(res.all(), testData['res'].all())
         self.assertAlmostEqual(jac.todense().all(), testData['jac'].todense().all())
 
+    def test_toa_3d_bundle(self):
+        testData = sio.loadmat(os.path.join(testDataDir,'data_toa_3d_bundle'))
+        d = testData['d']
+        rin = testData['rin']
+        sin = testData['sin']
+        inliers = testData['inliers']
+
+        settings = Settings()
+        settings.bundle.numberOfIterations = 30
+        settings.bundle.counterLimit = 50
+        settings.bundle.numericalLimit = 1e-4
+
+        # Assert
+        rout, sout, _, _ = util.toa_3d_bundle(d, rin, sin, inliers, settings)
+
+        # Test
+        self.assertAlmostEqual(rout.all(), testData['rout'].all())
+        self.assertAlmostEqual(rout.all(), testData['rin'].all())
+
 if __name__ == '__main__':
+    # Fixture
+    testData = sio.loadmat(os.path.join(testDataDir,'data_toa_normalize'))
+    rin = testData['rin']
+    sin = testData['sin']
 
     # Assert
+    rout, sout = util.toa_normalise(rin, sin)
+        
     unittest.main()

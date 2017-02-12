@@ -15,13 +15,13 @@ and use the bib-tex entry for citation
     address = "United States"
 }
 """
-
+import sys
 from math import sqrt
 import numpy as np
 from scipy import linalg
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import lsqr
-from numpy.linalg import svd, cholesky, inv, eig, solve, norm, lstsq
+from numpy.linalg import svd, cholesky, inv, eig, solve, norm, lstsq, qr
 from numpy.matlib import repmat
 
 def pre_process_compaction_matrix(Bhat, dim):
@@ -64,8 +64,8 @@ def calcresandjac(D, I, J, x, y):
     res = dd - D
     
     II = np.array([np.arange(len(I))]).T
-    JJ_i = (I - 1) * 3
-    JJ_j = (J - 1) * 3
+    JJ_i = I * 3
+    JJ_j = J * 3
     JJ1 = JJ_i + 0
     JJ2 = JJ_i + 1
     JJ3 = JJ_i + 2
@@ -83,7 +83,6 @@ def calcresandjac(D, I, J, x, y):
     data = np.concatenate((VV1, VV2, VV3, -VV1, -VV2, -VV3)).T[0]
     M = len(D)
     N = 3 * m + 3 * n
-    
     jac = csr_matrix((data, (row_ind, col_ind)), shape=(M, N))
     return res, jac
 
@@ -102,7 +101,8 @@ def bundletoa(D, I, J, xt, yt, settings):
     numLim = settings.bundle.numericalLimit
 
     for iteration in range(numIter):
-        print('Bundle LS iteration %d\r' % iteration)
+        sys.stdout.write('\rBundle LS iteration %d' % iteration)
+        sys.stdout.flush()
         res, jac = calcresandjac(D, I, J, xt, yt)
         dz_A = -(np.dot(jac.T, jac) + np.eye(jac.shape[1]))
         dz_b = (jac.T).dot(res)
@@ -129,3 +129,37 @@ def bundletoa(D, I, J, xt, yt, settings):
             yt = ytn
 
     return xt, yt, res, jac
+    
+def toa_3d_bundle(d, x, y, inliers, settings):
+    # Extract indices and feasible meaasurements in row vector form
+    I, J = np.where(inliers==1)
+    D = d[I, J]
+
+    # Convert to make the vecors two-dimensional
+    I = np.array([I]).T
+    J = np.array([J]).T
+    D = np.array([D]).T
+        
+    # Return solution
+    return bundletoa(D, I, J, x, y, settings)
+
+def toa_normalise(x0, y0):
+    xdim = x0.shape[0]
+    m = x0.shape[1]
+    n = y0.shape[1]
+    
+    # translation
+    t = -np.array([x0[:,0]]).T
+    x = x0 + repmat(t, 1, m)
+    y = y0 + repmat(t, 1, n)
+
+    # rotation
+    [q, r]=qr(x[:,1:xdim])
+    x = np.dot(q.T, x)
+    y = np.dot(q.T, y)
+
+    # mirroring
+    M = np.diag(np.sign(np.diag(x[:,1:xdim])));
+    x1 = np.dot(M, x);
+    y1 = np.dot(M, y);
+    return x1, y1

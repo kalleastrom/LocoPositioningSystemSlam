@@ -22,17 +22,25 @@ class Setting(object):
 
 class Settings(object):
     """
-    The settings object sets all constants in the solver outside of the
+    The settings object sets all constants in the solver
     """
     def __init__(self):
-        # Settings for the bundle methods
+        # Default settings for the solver
+        self.ransac = Setting()
+        self.ransac.threshold = 1.0;
+        self.ransac.k = 70.0;
+        self.ransac.threshold2 = 1.0;
+        self.ransac.k2 = 20.0;
+        self.ransac.min_inliers2 = 8;
+        
         self.bundle = Setting()
         self.bundle.numberOfIterations = 30
         self.bundle.counterLimit = 50
         self.bundle.numericalLimit = 1e-4
-        
+
         self.smoother = Setting()
-        
+        self.smoother.dynamics = 'TrippleIntegrator'
+        self.smoother.lambdacc = 10.0
     
 class Solver(object):
     """
