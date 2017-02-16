@@ -27,29 +27,36 @@ switch id(1),
         data.exlist = data.exlist(1:7);        
         data.anchorDim = 3; % The dimensionality of the span of the anchor positions
         data.bitcrazeDim = 3; % The dimensionality of the span of the bitcraze positions
-    otherwise
-        %tmp = load([systemsettings.rootpath filesep 'data' filesep 'lpsdb' filesep 'data4.mat']);
+    case 3
         tmp = load([systemsettings.rootpath filesep 'data' filesep 'data' filesep 'data4.mat']);
-        %keyboard;
         data = tmp.data;
-%         dirname = ensure_dirname(full_dirname,'sound files');
-%         fileExtension = '.aiff';
-%         sound_files = dir([dirname '*' fileExtension]);
-%         settings.mm = length(sound_files);
-%         settings.channels = 1:settings.mm;
-%         
-%         for i = 1:1
-%             sound_file = sound_files(i);
-%             ainfo = audioinfo(sound_file.name);
-%             settings.sr = ainfo.SampleRate;
-%             a = zeros(settings.mm,ainfo.TotalSamples);
-%             a(i,:) = audioread(sound_file.name);
-%         end
-%         
-%         for i = 2:settings.mm
-%             sound_file = sound_files(i);
-%             a(i,:) = audioread(sound_file.name);
-%         end
+    case 4
+        tmp = load([systemsettings.rootpath filesep 'data' filesep 'data' filesep 'data5.mat']);
+        data = tmp.data;
+    case 5
+        tmp = load([systemsettings.rootpath filesep 'data' filesep 'data' filesep 'data6.mat']);
+        data = tmp.data;
+    case 6
+        tmp = load([systemsettings.rootpath filesep 'data' filesep 'data' filesep 'data7.mat']);
+        data = tmp.data;
+    case 7
+        tmp = load([systemsettings.rootpath filesep 'data' filesep 'data' filesep 'data9.mat']);
+        data = tmp.data;
+    case 8
+        tmp = load([systemsettings.rootpath filesep 'data' filesep 'data' filesep 'data10.mat']);
+        data = tmp.data;
+    case 9
+        tmp = load([systemsettings.rootpath filesep 'data' filesep 'data' filesep 'data11.mat']);
+        data = tmp.data;
+    case 10
+        tmp = load([systemsettings.rootpath filesep 'data' filesep 'data' filesep 'data12.mat']);
+        data = tmp.data;
+    case 11
+        tmp = load([systemsettings.rootpath filesep 'data' filesep 'data' filesep 'data13.mat']);
+        data = tmp.data;
+    otherwise
+        tmp = load([systemsettings.rootpath filesep 'data' filesep 'data' filesep 'data4.mat']);
+        data = tmp.data;
 end
         
 end

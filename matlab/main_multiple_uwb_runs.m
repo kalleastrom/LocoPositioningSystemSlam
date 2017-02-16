@@ -9,7 +9,7 @@ addpath tools
 addpath tutorials
 
 %%
-data_nr = 3;   % Use example data data_nr
+data_nrs = 3:11;   % Use example data data_nr
 system_nr = 3; % Use system system_nr
 
 %% Choose one or several systems to test.
@@ -30,11 +30,14 @@ systemtexts = {...
     'SVD init + l_1 opt'...
     };
 
-%% read a database of benchmark examples
+%%
+for data_nr = data_nrs,
+    
+    % read a database of benchmark examples
     [data]=read_from_lpsdb(systemsettings,data_nr); % Use example data data_nr
-%% solve
+    % solve
     [rtmp,stmp,inltmp,res,jac]=feval(systems{system_nr},data.d);
-%% Extra bundling
+    % Extra bundling
     T = 0.3;
     rin = rtmp;
     sin = stmp;
@@ -48,7 +51,7 @@ systemtexts = {...
     [rut,sut,res,jac]=toa_3D_bundle_with_smoother(d,rin,sin,inlin,sys);
     rtmp = rut;
     stmp = sut;
-%% Visualize results
+    % Visualize results
     d = data.d;
     dcalc = toa_calc_d_from_xy(rtmp,stmp);
     resm = dcalc-d;
@@ -61,39 +64,5 @@ systemtexts = {...
     plot(data.sopt');
     subplot(3,1,3);
     plot(stmp');
-    
-    figure(1);
-    subplot(4,1,1);
-    imagesc(min(d,3));
-    subplot(4,1,2);
-    imagesc(min(dcalc,3));
-    subplot(4,1,3);
-    imagesc(dcalc-d);
-    subplot(4,1,4);
-    imagesc(inl3);
-    %
-    figure(2);
-    clf;
-    subplot(2,1,1)
-    plot(d');
-    hold on;
-    plot(dcalc');
-    subplot(2,1,2);
-    dtmp = d;
-    dtmp(find(~inl3))=NaN*ones(1,sum(sum(~inl3)));
-    plot(dtmp');
-    hold on;
-    plot(dcalc');
-    %
-    figure(3);
-    clf;
-    hist(resm(:),100);
-    %
-    figure(4);
-    dcalcgt = toa_calc_d_from_xy(data.Gtr,data.GTs_resamp);
-    subplot(2,1,1);
-    plot(dcalc(:),resm(:),'.')
-    subplot(2,1,2);
-    plot(dcalcgt(:),dcalc(:)-dcalcgt(:),'.');
     pause;
 end;
