@@ -34,10 +34,46 @@ def pre_process_compaction_matrix(Bhat, dim):
     xt  = xtp/-2.0;
     return xt, yt
 
-def get_linear_constraints(xt, yt):
-    H = np.zeros(3,3)
-    b = np.zeros(3,3)
-    return H, b
+def get_linear_constraints(Bhat, xt):
+    # Construct linear constraints
+    D = 3
+    Nunknowns = int((D * ( D + 1.0 ) ) / 2.0 + D + 1.0)
+    cfm_linear = np.zeros((6 - 1, Nunknowns))
+    cfm_linear_normalized = np.zeros((6 - 1, Nunknowns))
+    
+    # Linear equations formed by (-2*xt'*bv + xt'*Cv*xt) - Bhat
+    for ii in range(5):
+        xr1, xr2, xr3 = xt[:,ii+1]
+        cfm_linear[ii,0] = xr1 ** 2.0
+        cfm_linear[ii,1] = 2.0 * xr1 * xr2
+        cfm_linear[ii,2] = 2.0 * xr1 * xr3
+        cfm_linear[ii,3] = xr2 ** 2.0
+        cfm_linear[ii,4] = 2.0 * xr2 * xr3
+        cfm_linear[ii,5] = xr3 ** 2.0
+        cfm_linear[ii,6] = -2.0 * xr1
+        cfm_linear[ii,7] = -2.0 * xr2
+        cfm_linear[ii,8] = -2.0 * xr3
+        cfm_linear[ii,9] = -Bhat[ii+1, 0]
+
+        # normalize constraints
+        cfm_linear_normalized[ii,:] = cfm_linear[ii,:]/norm(cfm_linear[ii,:])
+
+    # compute constraints
+    AA = cfm_linear_normalized[:,:-1];
+    bb = cfm_linear_normalized[:,-1:];
+    zz = -linalg.pinv(AA).dot(bb);
+
+    H = np.array([
+        [zz[0][0], zz[1][0], zz[2][0]],
+        [zz[1][0], zz[3][0], zz[4][0]],
+        [zz[2][0], zz[4][0], zz[5][0]]
+    ])
+    b = np.array([
+        [zz[6][0]],
+        [zz[7][0]],
+        [zz[8][0]]
+    ])
+    return H, b, cfm_linear
 
 def safe_cholesky_factorization(H):
     realEig = np.real(eig(H)[0])
@@ -48,11 +84,16 @@ def safe_cholesky_factorization(H):
         L = cholesky(inv(H))
     return H, L
 
-def toa_3D_bundle(d, x, y, inliers):
-    (I, J) = inliers.nonzero()
-    ind = np.ravel_multi_index((I, J), dims=d.shape)
-    D = d[ind]
-    return bundletoa(D, I, J, x, y)
+def toa_3D_bundle(x, y, solution, settings):
+    (I, J) = solution.inliers.nonzero()
+    D = np.zeros(len(I),)
+    #ind = np.ravel_multi_index((I, J), dims=d.shape)
+    for n in range(len(I)):
+        D[n] = solution.d[I[n],J[n]]
+    I = np.reshape(I, (len(I),1))
+    J = np.reshape(J, (len(J),1))
+    D = np.reshape(D, (len(D),1))
+    return bundletoa(D, I, J, x, y, settings)
 
 def calcresandjac(D, I, J, x, y):
 
@@ -69,7 +110,9 @@ def calcresandjac(D, I, J, x, y):
     JJ1 = JJ_i + 0
     JJ2 = JJ_i + 1
     JJ3 = JJ_i + 2
-    JJ456 = JJ_j + 3 * m
+    JJ4 = JJ_j + 3 * m
+    JJ5 = JJ_j + 3 * m + 1
+    JJ6 = JJ_j + 3 * m + 2
 
     Vt0 = np.array([Vt[:, 0]]).T
     Vt1 = np.array([Vt[:, 1]]).T
@@ -79,7 +122,7 @@ def calcresandjac(D, I, J, x, y):
     VV3 = idd * Vt2
 
     row_ind = np.concatenate((II, II, II, II, II, II)).T[0]
-    col_ind = np.concatenate((JJ1, JJ2, JJ3, JJ456, JJ456, JJ456)).T[0]
+    col_ind = np.concatenate((JJ1, JJ2, JJ3, JJ4, JJ5, JJ6)).T[0]
     data = np.concatenate((VV1, VV2, VV3, -VV1, -VV2, -VV3)).T[0]
     M = len(D)
     N = 3 * m + 3 * n
@@ -88,11 +131,11 @@ def calcresandjac(D, I, J, x, y):
 
 def updatexy(x, y, dz):
     m, n = x.shape[1], y.shape[1]
-    dzx = dz[0:(3 * m), :]
-    dzy = dz[(3 * m):, :]
-    x += np.reshape(dzx, (3, m))
-    y += np.reshape(dzy, (3, n))
-    return x, y
+    dzx = dz[0:(3 * m)]
+    dzy = dz[(3 * m):]
+    xnew = x + np.reshape(dzx, (m,3)).T
+    ynew = y + np.reshape(dzy, (n,3)).T
+    return xnew, ynew
 
 def bundletoa(D, I, J, xt, yt, settings):
     
@@ -104,26 +147,23 @@ def bundletoa(D, I, J, xt, yt, settings):
         sys.stdout.write('\rBundle LS iteration %d' % iteration)
         sys.stdout.flush()
         res, jac = calcresandjac(D, I, J, xt, yt)
-        dz_A = -(np.dot(jac.T, jac) + np.eye(jac.shape[1]))
-        dz_b = (jac.T).dot(res)
-        dz = lsqr(dz_A, dz_b)[0]
-        dz = np.reshape(dz, (len(dz),1))
+        dz_A = -(jac.T.dot(jac) + np.eye(jac.shape[1]))
+        dz_b = jac.T.dot(res)
+        # Suporior to numpy's in terms of speed and to the sparse solver lsqr
+        # in terms of accuracy
+        dz = linalg.solve(dz_A, dz_b)
         xtn, ytn = updatexy(xt, yt, dz)
         res2, jac2 = calcresandjac(D, I, J, xtn, ytn)
-
-        normResidual = norm(res)
-        normResidualUpdated = norm(res2)
         
-        cc = norm(jac * dz) / normResidual
-        if normResidual < normResidualUpdated:
+        cc = norm(jac.dot(dz)) / norm(res)
+        if norm(res) < norm(res2):
             if cc > numLim:
                 counter = 0
-                while (counter < countLim) and (normResidual < normResidualUpdated):
-                    dz = dz / 2
+                while (counter < countLim) and (norm(res) < norm(res2)):
+                    dz = dz / float(2)
                     xtn, ytn = updatexy(xt, yt, dz)
-                    res2, jac2 = calcresandjac(D, I, J, xtn, ytn)
-                    normResidualUpdated = norm(res2)
-                    counter += 1
+                    res2, _ = calcresandjac(D, I, J, xtn, ytn)
+                    counter = counter + 1
         else:
             xt = xtn
             yt = ytn
@@ -154,12 +194,12 @@ def toa_normalise(x0, y0):
     y = y0 + repmat(t, 1, n)
 
     # rotation
-    [q, r]=qr(x[:,1:xdim])
+    [q, r]=qr(x[:,1:xdim+1])
     x = np.dot(q.T, x)
     y = np.dot(q.T, y)
 
     # mirroring
-    M = np.diag(np.sign(np.diag(x[:,1:xdim])));
+    M = np.diag(np.sign(np.diag(x[:,1:xdim+1])));
     x1 = np.dot(M, x);
     y1 = np.dot(M, y);
     return x1, y1

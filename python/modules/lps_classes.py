@@ -158,40 +158,39 @@ class Solver(object):
             solution = util.ransac_more_cols(solution)
             solution = util.bundle_rank(solution)
 
-    def find_optimal_solution(self, solution):
+    def find_optimal_solution(self, solution, settings):
         """
-        Find an initial feasible solution to the problem using L2 optimization
+        Find a solution to the problem using L2 optimization
         """
         Bhat = solution.Bhat
         dim = solution.D
-        rows = solution.rows
-        columns = solution.columns
+        rows = solution.rows[0] #
+        columns = solution.columns[0]
+        d = solution.d
         
         xt, yt = util.pre_process_compaction_matrix(Bhat, dim)
-        H, b = util.get_linear_constraints(xt, yt)        
+        H, b, _ = util.get_linear_constraints(Bhat, xt)        
         H, L = util.safe_cholesky_factorization(H)
 
         # Finds and reshapes the initial r and s vectors
-        r00 = solve(np.transpose(L), xt)
-        s00 = np.dot(L, (yt + repmat(b, 1, self.Bhat.shape[1])));
-        r0 = np.zeros(r00.shape)
-        s0 = np.zeros(s00.shape)
-        r0 = r00[:, rows]
-        s0 = s00[:, columns]
-        
-        # Finds the bundled solution and normalizes
-        r1, s1, res, jac = util.toa_3D_bundle(r0, s0, solution)
-        r2, s2 = util.normalize(r1, s1)
-        
-        # Finds the smoothened solution
-        r, s, res, jac = util.toa_3D_bundle_with_smoother(r2, s2, solution)
+        r00 = np.array(solve(L.T, xt))
+        r0 = np.zeros((3, d.shape[0]))
+        r0[:, rows.tolist()] = r00
 
-        # Finalizes solution
-        solution.R = r
-        solution.S = s
-        solution.residual = res
-        solution.jacobian = jac
-        return solution
+        s00 = np.dot(L, (yt + repmat(b, 1, Bhat.shape[1])));
+        s0 = np.zeros((3, d.shape[1]))
+        s0[:, columns.tolist()] = s00
+
+        # Finds the bundled solution and normalizes
+        r1, s1, res, jac = util.toa_3D_bundle(r0, s0, solution, settings)
+        r, s = util.toa_normalise(r1, s1)
+        #if self.solution.smoother is not None:
+        #    print 'here'
+            # Finds the smoothened solution
+            #r, s, res, jac = util.toa_3D_bundle_with_smoother(r, s, solution, settings)
+
+        # Externalizes and returns solution
+        return r, s
 
 class Solution(object):
     """
