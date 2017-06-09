@@ -1,4 +1,4 @@
-function [sols] = toa_3D_64_red(d)
+function [sols,data0,sols_short] = toa_3D_64_red(d)
 %[sols] = toa_3D_64_red(d)
 % Solver for minimal case TOA node calibration
 %  6 receivers and 4 senders

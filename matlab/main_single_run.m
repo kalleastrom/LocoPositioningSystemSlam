@@ -96,4 +96,9 @@ systemtexts = {...
     subplot(2,1,2);
     plot(dcalcgt(:),dcalc(:)-dcalcgt(:),'.');
     pause;
-end;
+    
+    figure(5);
+    plot(dcalcgt(:),d(:),'.');
+
+    figure(6);
+    plot(dcalcgt(:),d(:)-dcalcgt(:),'.');

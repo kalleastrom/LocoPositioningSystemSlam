@@ -21,6 +21,7 @@ for kk = 1:length(data_db);
         est_inl = zeros(m,n,NN);
         est_res = zeros(m,n,NN);
         for jj = 1:NN;
+            fprintf('%d ', jj);
             %disp([ii jj]);
             tic;
             %[rtmp,stmp,inltmp]=feval(systems{ii},data(jj).d,data(jj).r,data(jj).s);

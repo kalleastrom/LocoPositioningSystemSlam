@@ -1,4 +1,4 @@
-function [sols] = toa_3D_64_red(d)
+function [sols,data0,sols_short] = toa_3D_46_red_v3(d)
 %[sols] = toa_3D_64_red(d)
 % Solver for minimal case TOA node calibration
 %  6 receivers and 4 senders
@@ -9,11 +9,17 @@ function [sols] = toa_3D_64_red(d)
 %  complex solutions.
 % In:
 %    d - 6x4 matrix with distances
+%    settings - settings for solver use
+%               load toa_3D_46_settings
+%    xt -
+%    yt -
 % Out:
-%    sols  - struct with solutions
-%    sols.x{k} - receiver positions for solution nr k 
-%    sols.y{k} - sender positions for solution nr k 
+%    sols  - cell array with all real and feasible solvers
+%    stats - statistics from solver
 
+D = 3;
+m = 6;
+n = 4;
 d2 = d.^2;
 cl = compactionmatrix(6);
 cr = compactionmatrix(4);
@@ -76,16 +82,15 @@ end
 %%
 
 data0 = [R(:); zzb(:); zz0(:); db(:); da(:)];
-sols_short = solver_toa_46_red(data0);
+sols_short = solver_toa_46_v3(data0);
 
 % find real solutions
-%sols_real = find_realsol(sols_short);
-sols_real = sols_short(:,find(all(imag(sols_short)==0)));
+sols_real = find_realsol(sols_short);
 n_real    = size(sols_real,2);
 
 
 %% recover C and b
-sols_full = repmat(zz0,1,n_real)+zzb*sols_real(1:4,:); 
+sols_full = repmat(zz0,1,n_real)+zzb*sols_real(1:4,:);
 % Each column in sols full contains 9 elements, the six elements
 % of the 3x3 symmetric matrix H and the 3 elements of vector b
 
@@ -95,6 +100,8 @@ ok = 0;
 x = cell(1,0);
 y = cell(1,0);
 err = zeros(1,0);
+%keyboard;
+
 for i = 1:size(sols_full,2);
     
     HH = zeros(3,3);
@@ -105,38 +112,39 @@ for i = 1:size(sols_full,2);
     BB = zeros(3,1);
     for k = 1:3;
         BB = BB + b{k}*sols_full(6+k,i);
-    end    
+    end
     
     CC{i} = HH;
-    try
-        l    = chol(inv(CC{i}))
+    if min(eig(HH))>0,
+        l    = chol(inv(CC{i}));
         ok   = 1;
-        
-        x{kk} = inv(L{kk}')*(xt);
-        y{kk} = L{kk}*(yt+repmat(b{kk},1,n));
+        L{kk} = l;
+        BBs{kk} = BB;        
+        x{kk} = inv(l')*(xt);
+        y{kk} = l*(yt+repmat(BB,1,n));
         dd = sqrt( sum( (kron(ones(1,n),x{kk}) - kron(y{kk},ones(1,m)) ).^2 , 1 ) );
         dd = reshape(dd,m,n);
-        err(kk) = norm(d - dd);
-
+        % minibundle
         
-    catch % if not positive-definite, throw away
+        err(kk) = norm(d - dd);
+        C{kk} = CC{i};
+        solsvec{kk} = sols_full(:,i);
+        kk = kk+1;
+        
+        
+    else % if not positive-definite, throw away
         %         disp(' C is not positive definite')
-        l    = 0
-        continue;
+        l    = 0;
+        %continue;
     end
-    C{kk} = CC{i};
-    b{kk} = BB;
-    L{kk} = l;
-    solsvec{kk} = zz(:,i);
-    kk = kk+1;
 end
 
 %% Store output in sols
-
+%keyboard;
 if ok
-    sols.C = C;
+    sols.CC = CC;
     sols.L = L;
-    sols.b = b;
+    sols.b = BBs;
     sols.x = x;
     sols.y = y;
     sols.n_real = n_real;

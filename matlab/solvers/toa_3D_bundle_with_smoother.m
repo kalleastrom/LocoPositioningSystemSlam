@@ -24,7 +24,7 @@ D = d(ind);
 function [xopt,yopt,res,jac]=bundletoa(D,I,J,xt,yt,debug,opts);
 
 if nargin<6,
-    debug = 0;
+    debug = 1;
 end;
 
 %debug = 1;

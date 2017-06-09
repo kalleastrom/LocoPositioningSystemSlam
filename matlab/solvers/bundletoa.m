@@ -10,8 +10,8 @@ for kkk = 1:30;
     %kkk
     %keyboard;
     [res,jac]=calcresandjac(D,I,J,xt,yt);
-    %dz = -(jac\res);
-    dz = -(jac'*jac+eye(size(jac,2)))\(jac'*res);
+    dz = -(jac\res);
+    %dz = -(jac'*jac+eye(size(jac,2)))\(jac'*res);
     %[u,s,v]=svd(full(jac),0);
     %keyboard;
     %nrparam = size(jac,2);
