@@ -1,0 +1,60 @@
+<html>
+<head>
+  <title>Kalle Astrom, Local Positioning System Database (lpsdb)</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<H2>  Local Positioning System Database (lpsdb)</H2>
+
+<body>
+
+<p>
+Here is a database of datasets for calibrating local positioning systems.
+Typically there is a set of receivers r_i in R^3 and a set of senders s_j in R^3.
+Given some of the distance measurements d_ij = |r_i - s_j|
+determine r_i and s_j.
+
+
+<ol>
+<li>  Download the matlab code from <a href="https://github.com/kalleastrom/LocoPositioningSystemSlam"> https://github.com/kalleastrom/LocoPositioningSystemSlam </a>
+<li>  The folder structure should be:
+<ul>
+<li>  LocoPositioningSystemSlam
+<ul>
+<li>  matlab 
+<ul>
+<li>  main.m 
+<li>  other matlab code and folders 
+</ul>
+<li>  data 
+<ul>
+<li>  savefiles (this folder is used to save intermediate results)
+<li>  lpsgt  (this folder contains ground truth for experiments)
+<li>  lpsdb (this folder should contain the experiments you want to try. However, this folder is empty when you download it from github)
+<ul>
+<li>  data1.mat (one experiment saved as a mat file)
+<li>  data2.mat (another experiment saved as a mat file)
+<li>  data3.mat 
+<li>  ...
+</ul>
+</ul>
+<li>  tex 
+<ul>
+<li>  index.html (tex file explaining some of the math and algorithms)
+<li>  LocoPositioningSystemSlam.tex (tex file explaining some of the math and algorithms)
+</ul>
+</ul>
+</ul>
+<li>  Download the raw sound files from this site <a href="http://vision.maths.lth.se/lpsdb/"> http://vision.maths.lth.se/lpsdb/ </a>
+and put the each experiment mat file in the folder data/sfsdb so that you get the right file structure.
+<li>  Run main.m 
+</ol>
+
+<H2> Structure from Sound Database (sfsdb)</H2>
+<ol>
+<li>  <a href="http://vision.maths.lth.se/lpsdb/data4.mat"> data4.mat </a>
+</ol>
+
+
+</body>
+</html>
