@@ -7,6 +7,7 @@ function printFig( fileName )
 
 boldify1;
 eval( sprintf('print -depsc %s.eps', fileName) );
+eval( sprintf('print -djpeg %s.jpg', fileName) );
 eval( sprintf('hgsave(gcf,''%s.fig'');', fileName) );
 
 
@@ -69,6 +70,7 @@ for i=1:length(ha)
     set(get(ha(i),'ZLabel'),'FontWeight','Bold');
     set(get(ha(i),'ZLabel'),'VerticalAlignment','baseline');
 
+    
     set(get(ha(i),'Title'),'FontSize',16);
     set(get(ha(i),'Title'),'FontWeight','Bold');
   end

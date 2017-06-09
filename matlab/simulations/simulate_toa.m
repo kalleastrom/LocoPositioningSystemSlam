@@ -61,8 +61,8 @@ else
             end
         end
     else
-        x = 1*randn(3,m);
-        y = 1*randn(3,n);
+        x = randn(3,m);
+        y = randn(3,n);
         if options.normalise,
             x(1,1)=0;
             x(2,1)=0;
