@@ -1,12 +1,21 @@
-% Dowbnload data4.mat and put it in
+% As for now there are a few datasets in
+% LocoPositioningSystemSlam/data/data/
+% When running
+%   read_from_lpsdb
+% with data_nr = 3 to 11
+% one can try a few datasets with at least partial ground truth.
+%
+% In the long run we aim to put the datasets separately on
+% vision.maths.lth.se
 %
 
-% main.m
+% Before running, there are a few paths that needs to be set
+%
 fix_paths
-addpath ../data/lpsdb
-addpath solvers
-addpath tools
-addpath tutorials
+addpath ../data/lpsdb   % datasets
+addpath solvers         % Algorithms used for toa-calibration
+addpath tools           % Other useful algorithms
+addpath tutorials       % A few tutorials here
 
 %%
 data_nr = 4;   % Use example data data_nr
@@ -34,11 +43,13 @@ systemtexts = {...
     'SVD init + l_1 opt'...
     };
 
-%%
+%% Actually running a test system for solving the
+% esimation problem
+
 [rtmp,stmp,inltmp,res,jac]=feval(systems{system_nr},data.d);
 
 
-%% Try some extra bundling
+%% Try some extra bundling, with smoothing prior
 
 T = 0.3;
 
@@ -67,18 +78,34 @@ inl3 = (abs(resm)<T);
 figure(4);
 subplot(4,1,1);
 imagesc(min(d,3));
+title('measured distances d_ij');
+ylabel('Anchor nr (i)');
+xlabel('Measurement nr (j)');
 subplot(4,1,2);
 imagesc(min(dcalc,3));
+title('Fitted distances d_ij');
+ylabel('Anchor nr (i)');
+xlabel('Measurement nr (j)');
 subplot(4,1,3);
 imagesc(dcalc-d);
+title('Residuals in distances d_ij');
+ylabel('Anchor nr (i)');
+xlabel('Measurement nr (j)');
 subplot(4,1,4);
 imagesc(inl3);
+title('Estimated as inliers I_ij');
+ylabel('Anchor nr (i)');
+xlabel('Measurement nr (j)');
 
 figure(5);
 clf;
 plot(d');
 hold on;
 plot(dcalc');
+title('Measured and fitted distances');
+ylabel('Distance (m)');
+xlabel('Measurement nr (j)');
+
 
 dtmp = d;
 dtmp(find(~inl3))=NaN*ones(1,sum(sum(~inl3)));
@@ -87,156 +114,54 @@ clf;
 plot(dtmp');
 hold on;
 plot(dcalc');
+title('Measured and fitted distances (for the inliers)');
+ylabel('Measurement nr (j)');
+xlabel('Distance (m)');
 
 
 figure(7);
 clf;
 hist(resm(:),100);
+title('Histogram of residuals (both inliers and outliers)');
 
 figure(8);
 plot(dcalc(:),resm(:),'.')
-
+title('Residuals as a function of calculated distances');
+xlabel('Estimated distance (m)');
+ylabel('Distance residuals (m)');
 
 %% Calculate distances from gt
 
 
-    dcalcgt = toa_calc_d_from_xy(data.Gtr,data.GTs);
-    dcalc = toa_calc_d_from_xy(rtmp,stmp);
-    % ett hack 
-    %ojoj = find(isnan(dcalcgt(1,:)));
-    %dcalcgt(:,ojoj) = repmat(dcalcgt(:,ojoj(1)-1),1,length(ojoj));
- 
-    figure(1);
-    subplot(2,1,1);
-    imagesc(min(dcalc,3));
-    subplot(2,1,2);
-    imagesc(min(dcalcgt,3));
+dcalcgt = toa_calc_d_from_xy(data.Gtr,data.GTs);
+dcalcgt_resamp = toa_calc_d_from_xy(data.Gtr,data.GTs_resamp);
+dcalc = toa_calc_d_from_xy(rtmp,stmp);
+%hack
+%ojoj = find(isnan(dcalcgt(1,:)));
+%dcalcgt(:,ojoj) = repmat(dcalcgt(:,ojoj(1)-1),1,length(ojoj));
 
-
-    f0 = dcalc(5,:);
-    f1 = dcalcgt(5,:);
-
-    if 0,
-        tmp = find(isnan(f1));
-        f1(tmp) = 2.2*ones(1,length(tmp));
-    end
-
-    thresh = 0.001;
-    a = 2;
-    %tt = [-10 10];
-    %tt = tt(1):tt(end);
-
-    x = 1:length(f0);
-    xmid = x(100+1:end-100);
-    xmid = x(10+1:end-10);
-    f0t = interp1d(f0,xmid,a);
-    D = diag([1 1/1000 1/1000]); % obs! what is D?
-
-    %
-    z0 =[0;length(f1)/length(f0);1];
-
-%
-[f1t,f1td] = interp1d_with_derivative(f1,z0(2)*xmid+z0(1),a); % obs! Where is the amplitude?
-f1t = z0(3)*f1t; % add the amplitude
-f1td = z0(3)*f1td;
-J(:,1) = f1td';
-J(:,2) = (f1td.*xmid)';
-J(:,3) = f1t'; % obsobs!
-res = -(f0t'-f1t');
-%selrows = 1:250;
-selrows = 1:length(res);
-selrows = 1:550;
-%selrows = [1:250 630:length(res)];
-dz = -D*((J(selrows,:)*D)\res(selrows));
-%dz = -D*((J(selrows,:)*D)\res(selrows));
-maxnorm = 20;
-if abs(dz(1))>maxnorm,
-    dz = dz*(maxnorm/abs(dz(1)));
-end
-znew = z0+dz;
-[f1tnew,~] = interp1d_with_derivative(f1,znew(2)*xmid+znew(1),a); % obs! add paranthesis: znew(2)*(xmid+znew(1))?
-f1tnew = znew(3)*f1tnew; % add the amplitude
-[norm(res) norm(res+J*dz) norm(f0t-f1tnew)]
-% if norm(resnew) > norm(res) d� minska steget.
-z0 = znew;
-figure(2); clf;
-plot(f0t); hold on; plot(f1t);
-
-if 0,
-    dz = [0;0;1];
-    litet = 0.00001;
-    z1 = z0+dz*litet;
- [f1t,f1td] = interp1d_with_derivative(f1,z0(2)*xmid+z0(1),a); % obs! Where is the amplitude?
-f1t = z0(3)*f1t; % add the amplitude
-f1td = z0(3)*f1td;
-J(:,1) = f1td';
-J(:,2) = (f1td.*xmid)';
-J(:,3) = f1t'; % obsobs!
-res0 = -(f0t'-f1t');
-[f1t,f1td] = interp1d_with_derivative(f1,z1(2)*xmid+z1(1),a); % obs! Where is the amplitude?
-f1t = z1(3)*f1t; % add the amplitude
-f1td = z1(3)*f1td;
-J(:,1) = f1td';
-J(:,2) = (f1td.*xmid)';
-J(:,3) = f1t'; % obsobs!
-res1 = -(f0t'-f1t');
-   [(res1-res0)/litet J*dz]
-end
-
-
-%%
-clear dcalcgtfix
-x = 1:length(f0);
-xall = x(1:end);
-for k = 1:6;
-    f1 = dcalcgt(k,:);
-    %[f1t,f1td] = interp1d_with_derivative(f1,z0(2)*xall+z0(1),a); % obs! Where is the amplitude?
-    [f1t,f1td,okpos]=interp1d_with_derivative_careful(f1,z0(2)*xall+z0(1),a);
-    dcalcgtfix(k,:) = f1t;
-end
-
-gts = zeros(3,size(stmp,2));
-for k = 1:3;
-    f1 = data.GTs(k,:);
-    %[f1t,f1td] = interp1d_with_derivative(f1,z0(2)*xall+z0(1),a); % obs! Where is the amplitude?
-    [f1t,f1td,okpos]=interp1d_with_derivative_careful(f1,z0(2)*xall+z0(1),a);
-    gts(k,:) = f1t;
-end
-%
-if 0,
-    figure(10); clf;
-    plot(dcalcgtfix');
-end
-gtsok = repmat(okpos',3,1);
-%st = 36; sl = 555; gtsok(:,st:sl)=ones(3,(sl-st+1));
-data.GTs_resamp = gts;
-data.GTs_resamp_ok = gtsok;
-data.sopt = stmp;
-data.ropt = rtmp;
-data.z0 = z0;
-
-if 0,
-    cd ../data/data
-    save data5 data
-    cd ../../matlab
-end
-    
-figure(1);
-subplot(2,1,1);
+figure(11);
+subplot(3,1,1);
 imagesc(min(dcalc,3));
-subplot(2,1,2);
-imagesc(min(dcalcgtfix,3));
+title('Estimated distances');
+ylabel('Anchor nr (i)');
+xlabel('Measurement nr (j)');
+subplot(3,1,2);
+imagesc(min(dcalcgt,3));
+title('Ground truth distances');
+ylabel('Anchor nr (i)');
+xlabel('Measurement nr (j)');
+subplot(3,1,3);
+imagesc(min(dcalcgt_resamp,3));
+title('Ground truth distances');
+ylabel('Anchor nr (i)');
+xlabel('Measurement nr (j)');
 
-%%
-mm = mean(dcalc(:)-dcalcgtfix(:));
-figure(3); clf;
-plot(dcalcgtfix(:),dcalc(:)-dcalcgtfix(:)-mm,'.');
 
-figure(4); clf;
+figure(12); clf;
 plot(dcalc');
 hold on
-plot(dcalcgtfix')
+plot(dcalcgt_resamp')
 plot(d')
-
 
 

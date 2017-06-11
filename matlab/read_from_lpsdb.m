@@ -28,7 +28,7 @@ switch id(1),
         data.anchorDim = 3; % The dimensionality of the span of the anchor positions
         data.bitcrazeDim = 3; % The dimensionality of the span of the bitcraze positions
     case 3
-        tmp = load([systemsettings.rootpath filesep 'data' filesep 'lpsdb' filesep 'data4.mat']);
+        tmp = load([systemsettings.rootpath filesep 'data' filesep 'data' filesep 'data4.mat']);
         data = tmp.data;
     case 4
         tmp = load([systemsettings.rootpath filesep 'data' filesep 'data' filesep 'data5.mat']);
