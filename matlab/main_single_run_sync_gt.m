@@ -18,7 +18,7 @@ addpath tools           % Other useful algorithms
 addpath tutorials       % A few tutorials here
 
 %%
-data_nr = 4;   % Use example data data_nr
+data_nr = 5;   % Use example data data_nr
 system_nr = 3; % Use system system_nr
 
 

@@ -2,7 +2,6 @@
 
 addpath solvers
 
-
 %% Test of bundle and approximation of residuals
 
 m = 4; 
