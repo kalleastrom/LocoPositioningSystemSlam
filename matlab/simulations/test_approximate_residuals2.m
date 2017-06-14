@@ -1,6 +1,6 @@
 %% Test of bundle and approximation of residuals
-clear;
 fix_paths;
+clear;
 %% Simulate
 m = 4;         % Number of receivers
 n = 200;       % Number of senders

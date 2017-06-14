@@ -5,9 +5,9 @@ n = size(sopt,2);
 assert(n >= m);
 
 rs_dim = size(ropt,1);
-dfreedom = rs_dim + (rs_dim-1); % Origin and orientation
-fixated_mask = logical([ones(1,dfreedom) zeros(1, (rs_dim*m-dfreedom))]);
-% fixated_mask = logical([1 1 0 1 zeros(1, (rs_dim*m-dfreedom -1))]);
+fixated = ones(size(ropt));
+fixated(:,2:end) = 1 - triu(fixated(:,2:end));
+fixated_mask = logical(fixated(:));
 
 jaca = jacopt(:,1:(rs_dim *m));
 jacb = jacopt(:,(rs_dim *m+1):end);
