@@ -3,7 +3,7 @@ fix_paths;
 clear;
 %% Simulate
 m = 4;         % Number of receivers
-n = 100;       % Number of senders
+n = 50;       % Number of senders
 sigma = 0.1; % Standard deviation measurement noise
 n_batches = 10;
 
@@ -62,4 +62,21 @@ for bi=1:n_batches
     A(r1:r2,:) = batch_res(bi).cres.jac_qr_small;
     b(r1:r2,:) = batch_res(bi).cres.jac_qr_small*batch_res(bi).cres.ropt_small;
 end
-ropt_approx = A\b;
+ropt_approx = zeros(size(r));
+ropt_approx(~batch_res(1).cres.fixated) = A\b;
+
+%% Evaluate
+ropt_diff = zeros(1,n_batches);
+xlabels = cell(1,n_batches);
+for bi=1:n_batches
+    ropt_diff(bi) = norm(ropt_all - batch_res(bi).ropt);
+    xlabels{bi} = sprintf('Batch %i',bi);
+end
+approx_diff = norm(ropt_all - ropt_approx);
+xdata = 1:length(ropt_diff);
+figure(3);clf;
+hold on
+plot(xdata,ropt_diff)
+plot(xdata,repmat(approx_diff,1,n_batches));
+xlabel('Batch')
+legend('Batch ropt diff', 'Fused ropt diff');
