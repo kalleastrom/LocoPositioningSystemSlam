@@ -13,6 +13,7 @@ cd(thispath);
 addpath([rootpath filesep 'data']);
 addpath([rootpath filesep 'matlab']);
 addpath([rootpath filesep 'matlab' filesep 'solvers']);
+addpath([rootpath filesep 'matlab' filesep 'solvers' filesep 'fuse_sol']);
 addpath([rootpath filesep 'matlab' filesep 'simulations']);
 addpath([rootpath filesep 'matlab' filesep 'tools']);
 
