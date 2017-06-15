@@ -1,13 +1,9 @@
-function [ cres ] = compact_res( ropt, sopt, resopt, jacopt )
+function [ cres ] = compact_res( ropt, sopt, resopt, jacopt, fixated_mask)
 
+rs_dim = size(ropt,1);
 m = size(ropt,2);
 n = size(sopt,2);
 assert(n >= m);
-
-rs_dim = size(ropt,1);
-fixated = ones(size(ropt));
-fixated(:,2:end) = 1 - triu(fixated(:,2:end));
-fixated_mask = logical(fixated(:));
 
 jaca = jacopt(:,1:(rs_dim *m));
 jacb = jacopt(:,(rs_dim *m+1):end);

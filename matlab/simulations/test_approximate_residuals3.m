@@ -21,7 +21,7 @@ d_batch = reshape(d, m, n, n_batches);
 %% Optimize all at once
 [ropt,sopt,resopt,jacopt]=toa_2D_bundle(d,r,s);
 
-[ropt_all,sopt_all]=toa_normalise(ropt,sopt);
+[ropt_all,sopt_all, fix_mask]=toa_normalise(ropt,sopt);
 dcalc = toa_calc_d_from_xy(ropt,sopt);
 res_all = (dcalc(:)-d(:));
 
@@ -41,7 +41,7 @@ for bi=1:n_batches
     batch_res(bi).ropt = ropt;
     batch_res(bi).sopt = sopt;
     batch_res(bi).res = res;
-    batch_res(bi).cres = compact_res(ropt, sopt, resopt, jacopt);
+    batch_res(bi).cres = compact_res(ropt, sopt, resopt, jacopt, fix_mask);
     
     plot(ropt(1,:), ropt(2,:),'x')
     plot(sopt(1,:), sopt(2,:), '.')
@@ -53,7 +53,7 @@ plot(squeeze(ropt_plot(1,:,:))')
 subplot(2,1,2)
 plot(squeeze(ropt_plot(2,:,:))')
 %% Combine batches
-n_param = sum(~batch_res(1).cres.fixated);
+n_param = sum(~fix_mask);
 A = zeros(n_param*n_batches,n_param);
 b = zeros(n_param*n_batches,1);
 for bi=1:n_batches
@@ -63,7 +63,7 @@ for bi=1:n_batches
     b(r1:r2,:) = batch_res(bi).cres.jac_qr_small*batch_res(bi).cres.ropt_small;
 end
 ropt_approx = zeros(size(r));
-ropt_approx(~batch_res(1).cres.fixated) = A\b;
+ropt_approx(~fix_mask) = A\b;
 
 %% Evaluate
 ropt_diff = zeros(1,n_batches);

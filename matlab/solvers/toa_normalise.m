@@ -1,4 +1,4 @@
-function [x1,y1]=toa_normalise(x0,y0);
+function [x1,y1,fixated_mask]=toa_normalise(x0,y0);
 % [x1,y1]=toa_normalise(x0,y0);
 % change coordinate system so that %
 % x1(:,1) = 0
@@ -20,3 +20,8 @@ y = q'*y;
 M = diag(sign(diag(x(:,2:(1+xdim)))));
 x1 = M*x;
 y1 = M*y;
+
+% Return fixation mask for x0
+fixated = ones(size(x0));
+fixated(:,2:end) = 1 - triu(fixated(:,2:end));
+fixated_mask = logical(fixated(:));

@@ -17,12 +17,12 @@ res0 = (dtrue(:)-d(:));
 %% Optimize
 [ropt,sopt,resopt,jacopt]=toa_2D_bundle(d,r,s);
 
-[ropt,sopt]=toa_normalise(ropt,sopt);
+[ropt,sopt,fix_mask]=toa_normalise(ropt,sopt);
 dcalc = toa_calc_d_from_xy(ropt,sopt);
 res1 = (dcalc(:)-d(:));
 
 %% Compact residual
-cres = compact_res(ropt, sopt, resopt, jacopt);
+cres = compact_res(ropt, sopt, resopt, jacopt, fix_mask);
 
 %% Study the error function for 
 % maps of type 
