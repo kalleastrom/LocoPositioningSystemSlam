@@ -78,5 +78,6 @@ figure(3);clf;
 hold on
 plot(xdata,ropt_diff)
 plot(xdata,repmat(approx_diff,1,n_batches));
+ylim([0,max(ropt_diff)*1.1])
 xlabel('Batch')
-legend('Batch ropt diff', 'Fused ropt diff');
+legend('Batch ropt diff norm', 'Fused ropt diff norm');
