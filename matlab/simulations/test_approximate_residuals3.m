@@ -50,8 +50,12 @@ end
 figure(2);clf;
 subplot(2,1,1)
 plot(squeeze(ropt_plot(1,:,:))')
+title('Reciever position')
+ylabel('x')
 subplot(2,1,2)
 plot(squeeze(ropt_plot(2,:,:))')
+ylabel('y')
+xlabel('Batch')
 %% Combine batches
 n_param = sum(~fix_mask);
 A = zeros(n_param*n_batches,n_param);
@@ -80,4 +84,5 @@ plot(xdata,ropt_diff)
 plot(xdata,repmat(approx_diff,1,n_batches));
 ylim([0,max(ropt_diff)*1.1])
 xlabel('Batch')
+ylabel('Diff to optimal bundle')
 legend('Batch ropt diff norm', 'Fused ropt diff norm');
