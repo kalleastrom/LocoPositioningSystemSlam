@@ -209,3 +209,7 @@ octave-workspace
 #Avoid saving datafiles by accident
 *.mat
 
+
+*.eps
+
+*.fig

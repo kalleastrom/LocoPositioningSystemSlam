@@ -27,11 +27,11 @@ if nargin<6,
     debug = 0;
 end;
 
-for kkk = 1:10;
+for kkk = 1:20;
     %kkk
     [res,jac]=calcresandjac(D,I,J,xt,yt);
     %dz = -(jac\res);
-    dz = -(jac'*jac+0.1*eye(size(jac,2)))\(jac'*res);
+    dz = -(jac'*jac+0.1*speye(size(jac,2)))\(jac'*res);
     %     [u,s,v]=svd(full(jac),0);
     %     u = u(:,1:(end-6));
     %     s = s(1:(end-6),1:(end-6));
