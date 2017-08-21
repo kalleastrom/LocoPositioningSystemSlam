@@ -59,6 +59,9 @@ for k = 1:N,
     result(k).r = r;
     result(k).rvec = r(rsel)';
 end;
+%Compare residuals
+opt_d_diff = runs(2).d - toa_calc_d_from_xy(ropt, sopt);
+a_true = sum(opt_d_diff(:).^2);
 
 %% Run estimation on all runs
 
@@ -130,7 +133,7 @@ totresult.r = r;
 totresult.R = Rtot;
 totresult.a = atot;
 
-%% Hyptesprövning, resdiuals should be 
+%% Hyptesprï¿½vning, resdiuals should be 
 %(m*n-parametrar)*sigma^2
 
 
@@ -138,8 +141,11 @@ totresult.a = atot;
 
 [result(1).a^2 (m*n-2*n-rdim)*sigma^2]
 [result(2).a^2 (m*n-2*n-rdim)*sigma^2]
-[aextra (rdim)*sigma^2]
+[atot.^2 (2*(m*n-2*n)-rdim)*sigma^2]
+[aextra (rdim)*sigma^2] % Cannot be the same sigma? The observations are no longer distance measurements.
+% Test aextra by calculating sopt use it to derive atot. How to propagate dsdr?
 [resultall.a^2-result(1).a^2-result(2).a^2 aextra (rdim)*sigma^2]
+[totresult.a^2-result(1).a^2-result(2).a^2 aextra (rdim)*sigma^2]
 
 
 
