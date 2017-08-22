@@ -9,7 +9,7 @@ n_batches = 10;
 
 r = 10*rand(2,m);
 s = 10*rand(2,n*n_batches);
-s = sortrows(s',1)'; % Sort to increase difference between batches.
+% s = sortrows(s',1)'; % Sort to increase difference between batches.
 [r,s]=toa_normalise(r,s);
 dtrue = toa_calc_d_from_xy(r,s);
 d = dtrue + sigma*randn(size(dtrue));
@@ -57,18 +57,9 @@ plot(squeeze(ropt_plot(2,:,:))')
 ylabel('y')
 xlabel('Batch')
 %% Combine batches
-n_param = sum(~fix_mask);
-A = zeros(n_param*n_batches,n_param);
-b = zeros(n_param*n_batches,1);
-for bi=1:n_batches
-    r2 = bi*n_param;
-    r1 = r2 - n_param + 1;
-    A(r1:r2,:) = batch_res(bi).cres.jac_qr_small;
-    b(r1:r2,:) = batch_res(bi).cres.jac_qr_small*batch_res(bi).cres.ropt_small;
-end
-ropt_approx = zeros(size(r));
-ropt_approx(~fix_mask) = A\b;
+[ valid_batch_res,  valid_batch] = validate_map_batches( batch_res, sigma, m*n );
 
+res_tot = combine_compressed( valid_batch_res );
 %% Evaluate
 ropt_diff = zeros(1,n_batches);
 xlabels = cell(1,n_batches);
@@ -76,7 +67,7 @@ for bi=1:n_batches
     ropt_diff(bi) = norm(ropt_all - batch_res(bi).ropt);
     xlabels{bi} = sprintf('Batch %i',bi);
 end
-approx_diff = norm(ropt_all - ropt_approx);
+approx_diff = norm(ropt_all - res_tot.ropt);
 xdata = 1:length(ropt_diff);
 figure(3);clf;
 hold on
