@@ -9,6 +9,7 @@ for bi=1:n_batches
     % Validate fit
     e2_sum = batch_list(bi).cres.norm_res^2;
     expected_e2 = (n_obs - n_params)*sigma^2;
+    [e2_sum expected_e2]
     
     valid_batch(bi) = e2_sum < 2.0*expected_e2;
 end
